@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedEmail() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedEmail() && request.auth.token.email == 'aemann1025@gmail.com';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Candidate rules
+    match /candidates/{candidateId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isVerifiedEmail()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voteCount'])
+        && request.resource.data.voteCount == resource.data.voteCount + 1
+        && existsAfter(/databases/$(database)/documents/votes/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/votes/$(request.auth.uid)).data.candidateId == candidateId
+      );
+    }
+
+    // Vote rules
+    match /votes/{userId} {
+      // Users can only read their own vote
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      // Admins can list all votes, users can only list their own (filter)
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      allow create: if isVerifiedEmail()
+        && request.auth.uid == userId
+        && isValidId(request.resource.data.candidateId)
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.voterEmail == request.auth.token.email
+        && request.resource.data.createdAt == request.time
+        && exists(/databases/$(database)/documents/candidates/$(request.resource.data.candidateId));
+
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "Candidate": {
+      "title": "Candidate",
+      "description": "A candidate in the Miss Bato voting poll",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Candidate name" },
+        "description": { "type": "string", "description": "Short bio or description" },
+        "imageUrl": { "type": "string", "description": "URL to the candidate's picture" },
+        "voteCount": { "type": "number", "description": "Total votes received" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "imageUrl", "voteCount"]
+    },
+    "Vote": {
+      "title": "Vote",
+      "description": "A vote cast by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the voter" },
+        "candidateId": { "type": "string", "description": "ID of the candidate voted for" },
+        "voterEmail": { "type": "string", "description": "Email of the voter" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "candidateId", "voterEmail", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/candidates/{candidateId}": {
+      "schema": "Candidate",
+      "description": "Collection of candidates"
+    },
+    "/votes/{userId}": {
+      "schema": "Vote",
+      "description": "Collection of votes, keyed by userId to ensure one vote per user"
+    }
+  }
+}

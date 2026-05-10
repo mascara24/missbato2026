@@ -1,0 +1,6 @@
+{
+  "name": "Miss Bato Voting Poll",
+  "description": "A real-time voting platform for the Miss Bato pageant featuring Google OAuth verification and an admin dashboard for candidate management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
