@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, writeBatch, serverTimestamp, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Candidate, Vote } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { CandidateCard } from '../components/CandidateCard';
@@ -98,8 +98,7 @@ export const Home: React.FC = () => {
 
       await batch.commit();
     } catch (err: any) {
-      console.error("Voting error:", err);
-      setError("Failed to cast vote. Please try again.");
+      handleFirestoreError(err, OperationType.WRITE, `votes/${user.uid}`);
     } finally {
       setVoting(false);
     }

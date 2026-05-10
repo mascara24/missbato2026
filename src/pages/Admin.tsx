@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, getDocs, writeBatch } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Candidate } from '../types';
 import { Plus, Trash2, Edit3, Image as ImageIcon, Save, X, RotateCcw, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -51,8 +51,7 @@ export const Admin: React.FC = () => {
       setResetConfirmText('');
       alert("Poll has been successfully reset.");
     } catch (err) {
-      console.error("Reset error:", err);
-      alert("Failed to reset poll.");
+      handleFirestoreError(err, OperationType.WRITE, 'reset-poll');
     }
   };
 
@@ -76,8 +75,7 @@ export const Admin: React.FC = () => {
       }
       setFormData({ name: '', description: '', imageUrl: '' });
     } catch (err) {
-      console.error("Error saving candidate:", err);
-      alert("Failed to save candidate.");
+      handleFirestoreError(err, OperationType.WRITE, editingId ? `candidates/${editingId}` : 'candidates');
     }
   };
 
@@ -96,7 +94,7 @@ export const Admin: React.FC = () => {
       try {
         await deleteDoc(doc(db, 'candidates', id));
       } catch (err) {
-        console.error("Error deleting candidate:", err);
+        handleFirestoreError(err, OperationType.DELETE, `candidates/${id}`);
       }
     }
   };

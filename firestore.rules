@@ -6,7 +6,7 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // --- GLOBAL HELPERS ---
     function isSignedIn() {
       return request.auth != null;
     }
@@ -23,33 +23,57 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Candidate rules
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- VALIDATION BLUEPRINTS ---
+    function isValidCandidate(data) {
+      return data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.imageUrl is string && data.imageUrl.size() <= 2000
+        && data.voteCount is number && data.voteCount >= 0;
+    }
+
+    function isValidVote(data) {
+      return data.userId == request.auth.uid
+        && data.voterEmail == request.auth.token.email
+        && isValidId(data.candidateId)
+        && data.createdAt == request.time;
+    }
+
+    // --- CANDIDATE RULES ---
     match /candidates/{candidateId} {
       allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin() || (
+      
+      allow create: if isAdmin() && isValidCandidate(incoming());
+      
+      allow delete: if isAdmin();
+
+      allow update: if (isAdmin() && isValidCandidate(incoming())) || (
+        // Action: Cast Vote (Atomic Relational Sync)
         isVerifiedEmail()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voteCount'])
-        && request.resource.data.voteCount == resource.data.voteCount + 1
+        && incoming().diff(existing()).affectedKeys().hasOnly(['voteCount', 'updatedAt'])
+        && incoming().voteCount == existing().voteCount + 1
+        && incoming().updatedAt == request.time
         && existsAfter(/databases/$(database)/documents/votes/$(request.auth.uid))
         && getAfter(/databases/$(database)/documents/votes/$(request.auth.uid)).data.candidateId == candidateId
       );
     }
 
-    // Vote rules
+    // --- VOTE RULES ---
     match /votes/{userId} {
-      // Users can only read their own vote
       allow get: if isSignedIn() && request.auth.uid == userId;
-      // Admins can list all votes, users can only list their own (filter)
       allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
 
       allow create: if isVerifiedEmail()
-        && request.auth.uid == userId
-        && isValidId(request.resource.data.candidateId)
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.voterEmail == request.auth.token.email
-        && request.resource.data.createdAt == request.time
-        && exists(/databases/$(database)/documents/candidates/$(request.resource.data.candidateId));
+        && userId == request.auth.uid
+        && isValidVote(incoming())
+        && exists(/databases/$(database)/documents/candidates/$(incoming().candidateId));
 
       allow delete: if isAdmin();
     }
