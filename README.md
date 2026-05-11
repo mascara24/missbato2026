@@ -1,20 +1,28 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Miss Bato 2026 Voting Poll
 
-# Run and deploy your AI Studio app
+## Production Deployment Checklist
 
-This contains everything you need to run your app locally.
+### 1. Vercel Configuration
+The project is configured with `vercel.json` to handle client-side routing. All requests are redirected to `index.html`.
 
-View your app in AI Studio: https://ai.studio/apps/8481e0db-f6e2-4620-84b3-041df2f9ab0d
+### 2. Firebase Console Settings
+To ensure the app works on your production domain (`https://missbato2026.vercel.app/`):
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Select your project: `gen-lang-client-0206570504`.
+3. Go to **Authentication** > **Settings** > **Authorized Domains**.
+4. Add `missbato2026.vercel.app` to the list.
 
-## Run Locally
+### 3. Environment Variables
+On Vercel, you should set the following environment variables (from `firebase-applet-config.json`):
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_DATABASE_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 4. Security
+- **Firestore Rules**: Hardened with schema validation, atomic batch checks, and identity verification.
+- **Admin Access**: Restricted to `aemann1025@gmail.com`.
+- **Voting**: One vote per verified user, enforced by Firestore rules.

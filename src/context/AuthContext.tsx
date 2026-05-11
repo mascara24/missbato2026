@@ -37,8 +37,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      const provider = new GoogleAuthProvider();
+      // Force account selection to avoid auto-login issues
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      if (error.code === 'auth/popup-blocked') {
+        alert("The sign-in popup was blocked by your browser. Please allow popups for this site.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        alert("This domain is not authorized for sign-in. Please add it to your Firebase Console 'Authorized Domains'.");
+      } else {
+        alert(`Sign-in failed: ${error.message}`);
+      }
+    }
   };
 
   const logout = async () => {
